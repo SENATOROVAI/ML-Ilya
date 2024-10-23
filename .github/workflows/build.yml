@@ -2,13 +2,20 @@ name: "build"
 
 on:
   push:
-      branches:
-        - "**"  # Запускать на всех ветках
-        
+    branches:
+      - "**"  # Run on all branches
   pull_request:
+    branches:
+      - "**"  # Run on all branches for pull requests
   schedule:
-    - cron: "0 0 * * *" # Run everyday
-  
+    - cron: "0 0 * * *" # Run every day
+  workflow_dispatch:  # Allow manual triggering of the workflow
+  create:  # Trigger on repository creation (new branch/tag)
+  delete:  # Trigger on branch deletion
+  release:  # Trigger on new releases
+  issues:  # Trigger on issue events
+  pull_request_review:  # Trigger on pull request reviews
+  pull_request_review_comment:  # Trigger on pull request review comments
 
 jobs:
   build:
@@ -18,10 +25,10 @@ jobs:
         python-version: ["3.9", "3.13"]
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python 3.13
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.13
+        python-version: ${{ matrix.python-version }}  # Use version from matrix
         allow-prereleases: true
     - name: Install dependencies
       run: |
@@ -37,18 +44,24 @@ jobs:
         nbqa flake8 --ignore=E203,E501,W291,F821,F401,E402,E121 $(git ls-files '*.py' '*.ipynb')
     - name: Mypy
       run: |
-        # mypy --exclude=^misc/ --ignore-missing-imports --explicit-package-bases --ignore-missing-imports --disallow-untyped-calls --disallow-untyped-defs --disallow-untyped-decorators --strict --extra-checks --disallow-any-decorated --disallow-any-generics --local-partial-types --pretty --force-uppercase-builtins --force-union-syntax --force-union-syntax --warn-unreachable --warn-redundant-casts --warn-return-any $(git ls-files '*.py' '*.ipynb')
-        nbqa mypy --exclude=^misc/ --ignore-missing-imports --explicit-package-bases --ignore-missing-imports --disallow-untyped-calls --disallow-untyped-defs --disallow-untyped-decorators --strict --extra-checks --disallow-any-decorated --disallow-any-generics --local-partial-types --pretty --force-uppercase-builtins --force-union-syntax --force-union-syntax --warn-unreachable --warn-redundant-casts --warn-return-any $(git ls-files '*.ipynb')
+        nbqa mypy --exclude=^misc/ --ignore-missing-imports --explicit-package-bases --ignore-missing-imports --disallow-untyped-calls --disallow-untyped-defs --disallow-untyped-decorators --strict --extra-checks --disallow-any-decorated --disallow-any-generics --local-partial-types --pretty --force-uppercase-builtins --force-union-syntax --warn-unreachable --warn-redundant-casts --warn-return-any $(git ls-files '*.ipynb')
     - name: isort
       run: |
         isort --check-only --diff $(git ls-files '*.py' '*.ipynb')
         nbqa isort --check-only --diff $(git ls-files '*.py' '*.ipynb')
     - name: pyupgrade
       run: |
-        # pyupgrade $(git ls-files '*.py' '*.ipynb')
         nbqa pyupgrade $(git ls-files '*.py' '*.ipynb')
     - name: Black
       run: |
-        black --diff --line-length=79 $(git ls-files '*.py' '*.ipynb')
-        nbqa black --diff --line-length=79 $(git ls-files '*.py' '*.ipynb')
- 
+        black --line-length=79 $(git ls-files '*.py' '*.ipynb')
+        nbqa black --line-length=79 $(git ls-files '*.py' '*.ipynb')
+    - name: Commit changes
+      run: |
+        git config --local user.name "github-actions"
+        git config --local user.email "actions@github.com"
+        git add .
+        git commit -m "Format code with Black, isort, and pyupgrade" || echo "No changes to commit"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensure to push with a valid token
