@@ -1,21 +1,24 @@
 name: "build"
 
+permissions:
+  contents: write  # Grant write access to the repository contents
+
 on:
   push:
     branches:
-      - "**"  # Run on all branches
+      - "**"
   pull_request:
     branches:
-      - "**"  # Run on all branches for pull requests
+      - "**"
   schedule:
     - cron: "0 0 * * *" # Run every day
-  workflow_dispatch:  # Allow manual triggering of the workflow
-  create:  # Trigger on repository creation (new branch/tag)
-  delete:  # Trigger on branch deletion
-  release:  # Trigger on new releases
-  issues:  # Trigger on issue events
-  pull_request_review:  # Trigger on pull request reviews
-  pull_request_review_comment:  # Trigger on pull request review comments
+  workflow_dispatch:
+  create:
+  delete:
+  release:
+  issues:
+  pull_request_review:
+  pull_request_review_comment:
 
 jobs:
   build:
@@ -28,7 +31,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.python-version }}  # Use version from matrix
+        python-version: ${{ matrix.python-version }}
         allow-prereleases: true
     - name: Install dependencies
       run: |
@@ -64,4 +67,4 @@ jobs:
         git commit -m "Format code with Black, isort, and pyupgrade" || echo "No changes to commit"
         git push
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensure to push with a valid token
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
